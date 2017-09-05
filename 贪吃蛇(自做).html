@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style type="text/css">
+	*{
+		margin: 0;
+		padding: 0;
+	}
+	#box{
+		display: block;
+		width: 400px;
+		height: 400px;
+		background: #0ff;
+		margin: 0 auto;
+		position: relative;
+	}
+	.snake{
+		width: 18px;
+		height: 18px;
+		background: #ff0;
+		border:1px solid #f00;
+		position: absolute;
+		z-index: 999;
+	}
+	.food{
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #f00;
+		position: absolute;
+	}
+	</style>
+	<script src="jquery-1.11.1.min.js"></script>
+	<script src="sport5.js"></script>
+</head>
+<body>
+	<div id="box">
+	</div>
+</body>
+</html>
+<script>
+	window.onload = function(){
+		new Snake().move();
+	}
+	var _food = null;
+	var score = 0;
+	var srr = [new Snake()];
+	function Snake(){
+		if ( !Snake.instance ){
+			Snake.instance = {
+				direction : [
+					{ "x":-20,"y":0 },
+					{ "x":0,"y":-20 },
+					{ "x":20,"y":0 },
+					{ "x":0,"y":20 }
+				],//方向
+				bg : document.getElementById("box"),
+				sc : new Set() ,
+				init:function(){
+					this.body = document.createElement("div");
+					this.body.className = "snake";
+					this.bg.appendChild(this.body);
+					this.body.style.top = 80 + "px";
+					this.body.style.left = 280 + "px";
+				},
+				move:function(speed){
+					this.speed = this.direction[0];
+					this.init();
+					this.turn();
+					// console.log(speed)
+					this.timer = setInterval(function(){
+						if ( this.body.offsetLeft<=0 && this.speed == this.direction[0]){
+							this.body.style.left=0;
+							this.die();
+						}else if( this.body.offsetLeft>=380 && this.speed == this.direction[2]){
+							this.body.style.left =380 + "px";
+							this.die();
+						}else if( this.body.offsetTop>=380 && this.speed == this.direction[3]){
+							this.body.style.top =380 + "px";
+							this.die();
+						}else if( this.body.offsetTop<=0 && this.speed == this.direction[1]){//上
+							this.body.style.top=0;
+							this.die();
+						}else{
+							this.judge();
+							if ( srr.length>=2 ){
+								for ( var i = srr.length-1 ; i >= 1  ; i-- ){
+									srr[i].body.style.top = srr[i-1].body.offsetTop + "px";
+									srr[i].body.style.left = srr[i-1].body.offsetLeft + "px";
+								}	
+							}
+							this.judge2();
+							this.body.style.top = this.body.offsetTop + this.speed["y"] + "px";
+							this.body.style.left = this.body.offsetLeft + this.speed["x"] +"px";
+						}
+					}.bind(this),200)
+					_food = new Food();
+					_food.init();
+				},
+				die:function(){
+					clearInterval(this.timer)
+					alert("Game Over!您的得分为"+score)
+				},
+				turn:function(){
+					document.onkeydown = function(e){
+						var e = e || event;
+						var code = e.keyCode || e.which;
+						var pre = this.speed;//识别原来的方向
+						// console.log(this.speed)
+						switch ( code ){
+							case 37 :  
+								if( pre!=this.direction[2] ){
+									this.speed = this.direction[0];//向左
+								}
+								break;
+							case 38 :  
+								if ( pre!=this.direction[3] ){
+									this.speed = this.direction[1];//向上
+								}
+								break;
+							case 39 :  
+								if ( pre!=this.direction[0] ){
+									this.speed = this.direction[2];//向右
+								}
+								break;
+							case 40 :  
+								if( pre!=this.direction[1] ){
+									this.speed = this.direction[3];//向下
+								}
+								break;
+						}
+					}.bind(this);
+				},
+				judge:function(){
+					if ( _food.body.offsetLeft == new Snake().body.offsetLeft && _food.body.offsetTop == new Snake().body.offsetTop){
+						var bd = new Body();
+						srr.push(bd)
+						bd.init();
+						_food.die();
+						_food = new Food();
+						_food.init();
+						score++;
+						console.log(srr.length)
+					}
+				},
+				judge2:function(){
+					for ( var i= 1 ; i<srr.length ; i++ ){
+						if ( srr[i].body.offsetLeft == new Snake().body.offsetLeft && srr[i].body.offsetTop == new Snake().body.offsetTop+20 && this.speed == this.direction[3] ){
+							this.die();
+							// alert("Game Over1!")
+						}else if ( srr[i].body.offsetLeft == new Snake().body.offsetLeft && srr[i].body.offsetTop == new Snake().body.offsetTop-20 &&  this.speed == this.direction[1] ){
+							this.die();
+							// alert("Game Over2!")
+						}else if ( srr[i].body.offsetLeft == new Snake().body.offsetLeft + 20 && srr[i].body.offsetTop == new Snake().body.offsetTop &&  this.speed == this.direction[2] ){
+							this.die();
+							// alert("Game Over3!")
+						}else if( srr[i].body.offsetLeft == new Snake().body.offsetLeft - 20 && srr[i].body.offsetTop == new Snake().body.offsetTop &&  this.speed == this.direction[0] ){
+							this.die();
+							// alert("Game Over4!")
+						}
+					}
+				}
+			}
+		}
+		return Snake.instance;
+	}
+
+	function Food(){
+		this.rand = function(min,max){
+			return Math.floor( Math.random()*(max-min+1)+min)
+		}
+		this.init = function(){
+			this.body = document.createElement("div");
+			this.body.className = "food";
+			this.body.style.top = 20*this.rand(0,19) + "px";
+			this.body.style.left = 20*this.rand(0,19) + "px";
+			new Snake().bg.appendChild(this.body);
+		}
+		this.die = function(){
+			this.body.remove();
+		}
+	}
+
+	function Body(){
+		this.init = function(){
+			this.body = document.createElement("div");
+			this.body.className = "snake";
+			new Snake().bg.appendChild(this.body);
+		}
+	}
+</script>
